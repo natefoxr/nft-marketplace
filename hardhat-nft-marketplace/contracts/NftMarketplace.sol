@@ -20,6 +20,7 @@ error NftMarketplace__NotListed(address nftaddress, uint256 tokenId);
 error NftMarketplace__NotOwner();
 error NftMarketplace__PriceNotMet(address nftAddress, uint256 tokenId, uint256 price);
 error NftMarketplace__NoProceeds();
+error NftMarketplace__ItemAlreadyOwned();
 
 
 //////////////////////////////
