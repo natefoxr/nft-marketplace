@@ -7,6 +7,7 @@ pragma solidity ^0.8.7;
 //////////////////////////////
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 //////////////////////////////
 // Errors                   //
@@ -15,7 +16,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 error NftMarketplace__PriceMustBeAboveZero();
 error NftMarketplace__NotApprovedForMarketplace();
 error NftMarketplace__AlreadyListed(address nftAddress, uint256 tokenId);
-error NftMarketPlace__NotListed(address nftaddress, uint256 tokenId);
+error NftMarketplace__NotListed(address nftaddress, uint256 tokenId);
 error NftMarketplace__NotOwner();
 error NftMarketplace__PriceNotMet(address nftAddress, uint256 tokenId, uint256 price);
 error NftMarketplace__NoProceeds();
@@ -25,7 +26,7 @@ error NftMarketplace__NoProceeds();
 // Contract                 //
 //////////////////////////////
 
-contract NftMarketplace {
+contract NftMarketplace is ReentrancyGuard {
 
     //////////////////////////////
     // Structs                  //
@@ -62,6 +63,7 @@ contract NftMarketplace {
     );
 
     event ItemCanceled(
+        address indexed seller,
         address indexed nftAddress,
         uint256 indexed tokenId
     );
@@ -92,7 +94,7 @@ contract NftMarketplace {
     ) {
         Listing memory listing = s_listings[nftAddress][tokenId];
         if (listing.price <= 0) {
-            revert NftMarketPlace__NotListed(nftAddress, tokenId);
+            revert NftMarketplace__NotListed(nftAddress, tokenId);
         }
         _;
     }
@@ -162,7 +164,7 @@ contract NftMarketplace {
         msg.sender
     ) {
         delete (s_listings[nftAddress][tokenId]);
-        emit ItemCanceled(nftAddress, tokenId);
+        emit ItemCanceled(msg.sender, nftAddress, tokenId);
     }
 
     /**
@@ -172,11 +174,12 @@ contract NftMarketplace {
      * @dev This function results in the amount the seller is owed being assigned to a mapping. This is to follow Solidity's best practice of
      * Pull over Push and having the seller withdraw the ETH/Tokens themselves. The Intent is to Shift the Risk associated wth transfering ether
      * to the user.
+     * @dev Using the OpenZeppelin ReentrancyGuard here to protect users from reentrancy attacks against transfers
      */
     function buyItem(
         address nftAddress,
         uint256 tokenId
-    ) external payable isListed(
+    ) external payable nonReentrant isListed(
         nftAddress,
         tokenId
     ) {
@@ -218,8 +221,9 @@ contract NftMarketplace {
 
     /**
      * @notice Method for seller withdrawing ETH proceeds from selling NFTs
+     * @dev Using the OpenZeppelin ReentrancyGuard here to protect users from reentrancy attacks against transfers
      */
-    function withdrawProceeds() external {
+    function withdrawProceeds() external nonReentrant {
         uint256 proceeds = s_proceeds[msg.sender];
         if (proceeds <= 0) {
             revert NftMarketplace__NoProceeds();
