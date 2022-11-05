@@ -1,5 +1,5 @@
-const { network, ethers } = require("hardhat");
-const { neworkConfig, developmentChains, VERIFICATION_BLOCK_CONFIRMATIONS, networkConfig } = require("../helper-hardhat-config");
+const { network } = require("hardhat");
+const { developmentChains } = require("../helper-hardhat-config");
 const { verify } = require("../utils/verify");
 
 module.exports = async function ({ getNamedAccounts, deployments }) {
@@ -16,13 +16,14 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
         log: true,
         waitConfirmations: network.config.blockConfirmations || 1,
     })
-    log(`"NftMarketplace.sol" Deployed at ${nftMarketplace.address}!`);
     log("----------------------------------------------------------");
 
     if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
         log("Verifying NftMarketplace.sol on Etherscan...");
         await verify(nftMarketplace.address, args);
     }
+    log("----------------------------------------------------------");
+
 }
 
 module.exports.tags = ["all", "nftMarketplace"];
